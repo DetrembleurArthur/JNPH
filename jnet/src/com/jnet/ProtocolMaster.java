@@ -21,49 +21,81 @@ public final class ProtocolMaster implements Runnable
     {
     	clientProtocolClasses = new ArrayList<>();
     	serverProtocolClasses = new ArrayList<>();
+        register(protocolClasses);
+        protocolServers = new ArrayList<>();
+        protocolClients = new ArrayList<>();
+    }
+
+    private void register(Class<?> ... protocolClasses)
+    {
         for(Class<?> protocolClass : protocolClasses)
         {
             if(protocolClass.isAnnotationPresent(ServerProtocol.class))
             {
-            	serverProtocolClasses.add(protocolClass);
+                if(!serverProtocolClasses.contains(protocolClass))
+                    serverProtocolClasses.add(protocolClass);
             }
             else if(protocolClass.isAnnotationPresent(ClientProtocol.class))
             {
-            	clientProtocolClasses.add(protocolClass);
+                if(!clientProtocolClasses.contains(protocolClass))
+                    clientProtocolClasses.add(protocolClass);
             }
             else
             {
                 throw new IllegalArgumentException(protocolClass.getCanonicalName() + " is not annotated as a Protocol");
             }
         }
-        protocolServers = new ArrayList<>();
-        protocolClients = new ArrayList<>();
+    }
+
+    public ProtocolMaster registerAndLaunch(Class<?> protocolClass)
+    {
+        register(protocolClass);
+        if(protocolClass.isAnnotationPresent(ServerProtocol.class))
+        {
+            protocolServers.add(launchServer(protocolClass));
+        }
+        else if(protocolClass.isAnnotationPresent(ClientProtocol.class))
+        {
+            protocolClients.add(launchClient(protocolClass));
+        }
+        return this;
+    }
+
+    private ProtocolServer launchServer(Class<?> protocolClass)
+    {
+        try
+        {
+            ProtocolServer protocolServer = new ProtocolServer(protocolClass);
+            protocolServer.start();
+            return protocolServer;
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+            Log.err("ProtocolMaster", "starting server failed");
+        }
+        return null;
     }
     
     private void launchServers()
     {
     	for(Class<?> protocol : serverProtocolClasses)
         {
-    		try
-            {
-                ProtocolServer protocolServer = new ProtocolServer(protocol);
-                protocolServers.add(protocolServer);
-                protocolServer.start();
-            } catch (IOException e)
-            {
-            	e.printStackTrace();
-            	Log.err("ProtocolMaster", "starting server failed");
-            }
+    		protocolServers.add(launchServer(protocol));
         }
+    }
+
+    private ProtocolClient launchClient(Class<?> protocolClass)
+    {
+        ProtocolClient protocolClient = new ProtocolClient(protocolClass);
+        protocolClient.run();
+        return protocolClient;
     }
     
     private void launchClients()
     {
     	for(Class<?> protocol : clientProtocolClasses)
         {
-    		ProtocolClient protocolClient = new ProtocolClient(protocol);
-			protocolClient.run();
-			protocolClients.add(protocolClient);
+    		protocolClients.add(launchClient(protocol));
         }
     }
 
