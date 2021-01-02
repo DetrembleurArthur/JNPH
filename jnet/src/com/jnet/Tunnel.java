@@ -1,0 +1,105 @@
+package com.jnet;
+
+import java.io.*;
+import java.net.Socket;
+
+public class Tunnel
+{
+    private BufferedReader bufferedReader;
+    private BufferedWriter bufferedWriter;
+    private ObjectOutputStream objectOutputStream;
+    private ObjectInputStream objectInputStream;
+
+    public Tunnel(Socket socket)
+    {
+        try
+        {
+            objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+            objectInputStream = new ObjectInputStream(socket.getInputStream());
+        } catch (IOException e)
+        {
+            Log.err("Tunnel", "unable to init object streams");
+        }
+        try
+        {
+            bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+        } catch (IOException e)
+        {
+        	Log.err("Tunnel", "unable to init buffered streams");
+        }
+    }
+
+    public void sendbuff(Query query)
+    {
+        try
+        {
+            bufferedWriter.write(query.toString() + "\n");
+            bufferedWriter.flush();
+        } catch (Exception e)
+        {
+            e.printStackTrace();
+            Log.err("Tunnel", "unable to send [" + query + "]");
+        }
+    }
+
+    public Query recvbuff()
+    {
+        try
+        {
+            String content = bufferedReader.readLine();
+            return new Query(content);
+        } catch (IOException e)
+        {
+        	e.printStackTrace();
+        	Log.err("Tunnel", "unable to recieve buffer");
+        }
+        return null;
+    }
+
+    public void senobj(Serializable serializable)
+    {
+        try
+        {
+            objectOutputStream.writeObject(serializable);
+            objectOutputStream.flush();
+        } catch (Exception e)
+        {
+            e.printStackTrace();
+            Log.err("Tunnel", "unable to send [" + serializable + "]");
+        }
+    }
+
+    public <T extends Serializable> T recvobj()
+    {
+        try
+        {
+            return (T) objectInputStream.readObject();
+        } catch (Exception e)
+        {
+            e.printStackTrace();
+            Log.err("Tunnel", "unable to revieve an object");
+        }
+        return null;
+    }
+
+    public BufferedReader getBufferedReader()
+    {
+        return bufferedReader;
+    }
+
+    public BufferedWriter getBufferedWriter()
+    {
+        return bufferedWriter;
+    }
+
+    public ObjectOutputStream getObjectOutputStream()
+    {
+        return objectOutputStream;
+    }
+
+    public ObjectInputStream getObjectInputStream()
+    {
+        return objectInputStream;
+    }
+}
