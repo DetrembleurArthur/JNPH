@@ -2,16 +2,17 @@ package com.jnet;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class ProtocolMaster implements Runnable, ProtocolEntity
 {
-    private ArrayList<Class<?>> clientProtocolClasses;
-    private ArrayList<Class<?>> serverProtocolClasses;
-    private ArrayList<ProtocolServer> protocolServers;
-    private ArrayList<ProtocolClient> protocolClients;
-    private int id;
+    private final ArrayList<Class<?>> clientProtocolClasses;
+    private final ArrayList<Class<?>> serverProtocolClasses;
+    private final ArrayList<ProtocolServer> protocolServers;
+    private final ArrayList<ProtocolClient> protocolClients;
+    private final int id;
 
-    private static int counter = 0;
+    private static final AtomicInteger counter = new AtomicInteger(0);
     
     public static ProtocolMaster launch(Class<?> ... protocolClasses)
     {
@@ -27,7 +28,7 @@ public final class ProtocolMaster implements Runnable, ProtocolEntity
         register(protocolClasses);
         protocolServers = new ArrayList<>();
         protocolClients = new ArrayList<>();
-        id = ++counter;
+        id = counter.incrementAndGet();
     }
 
     private void register(Class<?> ... protocolClasses)
@@ -108,6 +109,7 @@ public final class ProtocolMaster implements Runnable, ProtocolEntity
     {
         launchServers();
         launchClients();
+        Log.out(this, "has launch PotocolEntity instances");
     }
 
 	public synchronized ArrayList<Class<?>> getClientProtocolClasses() {

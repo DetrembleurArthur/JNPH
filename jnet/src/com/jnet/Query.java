@@ -5,6 +5,13 @@ import java.util.ArrayList;
 
 public class Query implements Serializable
 {
+    public enum Mode
+    {
+        NORMAL,
+        BROADCAST
+    }
+
+    private Mode mode;
     private String type;
     private Args args;
 
@@ -28,10 +35,28 @@ public class Query implements Serializable
         this("undefined");
     }
 
-    public Query(String buffer)
+    public Query(String buffer, boolean moded)
     {
         args = new Args();
-        load(buffer);
+        if(moded)
+        {
+            load(buffer);
+        }
+        else
+        {
+            load(buffer, Mode.NORMAL);
+        }
+    }
+
+    public Query(String buffer)
+    {
+        this(buffer, Mode.NORMAL);
+    }
+
+    public Query(String buffer, Mode mode)
+    {
+        args = new Args();
+        load(buffer, mode);
     }
 
     public Query pack(Object arg)
@@ -59,12 +84,34 @@ public class Query implements Serializable
             type = tokens[0];
             if(tokens.length > 1)
             {
+                mode = Mode.valueOf(tokens[1]);
+                if(tokens.length > 2)
+                {
+                    for(int i = 2; i < tokens.length; i++)
+                    {
+                        args.add(tokens[i]);
+                    }
+                }
+            }
+        }
+        System.err.println(mode);
+    }
+
+    public void load(String buffer, Mode mode)
+    {
+        String[] tokens = buffer.split("#@#");
+        if(tokens.length > 0)
+        {
+            type = tokens[0];
+            if(tokens.length > 1)
+            {
                 for(int i = 1; i < tokens.length; i++)
                 {
                     args.add(tokens[i]);
                 }
             }
         }
+        this.mode = mode;
     }
 
     public String getType()
@@ -99,10 +146,22 @@ public class Query implements Serializable
     	return this;
     }
 
+    public Query mode(Mode mode)
+    {
+        this.mode = mode;
+        return this;
+    }
+
+    public Mode getMode()
+    {
+        return mode;
+    }
+
     @Override
     public String toString()
     {
         StringBuilder buffer = new StringBuilder(type);
+        buffer.append("#@#").append(mode);
         for(Object obj : args)
             buffer.append("#@#").append(obj.toString());
         return buffer.toString();

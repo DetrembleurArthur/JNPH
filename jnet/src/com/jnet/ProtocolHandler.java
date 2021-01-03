@@ -43,6 +43,13 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
     		return protocol.getClass().getAnnotation(ServerProtocol.class).name();
     	return protocol.getClass().getAnnotation(ClientProtocol.class).name();
     }
+
+    public boolean isInObjectQueryMode()
+    {
+        if(protocol.getClass().isAnnotationPresent(ServerProtocol.class))
+            return protocol.getClass().getAnnotation(ServerProtocol.class).objQuery();
+        return protocol.getClass().getAnnotation(ClientProtocol.class).objQuery();
+    }
     
     private void initControls()
     {
@@ -54,8 +61,6 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
                 controls.add(method);
             }
         }
-        if(controls.isEmpty())
-            throw new IllegalArgumentException(protocol.getClass().getAnnotation(ServerProtocol.class).name() + " has no Controls");
     }
     
     private void connectTunnel()
@@ -102,17 +107,39 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
         return running;
     }
 
+    private Query recv()
+    {
+        Query query;
+        if(isInObjectQueryMode())
+            query = tunnel.recvobj();
+        else
+            query = tunnel.recvbuff();
+        return query;
+    }
+
+    public synchronized void send(Query query)
+    {
+        if(isInObjectQueryMode())
+            tunnel.sendobj(query);
+        else
+            tunnel.sendbuff(query);
+    }
+
     @Override
     public void run()
     {
         running = true;
         while(running)
         {
-
         	Log.out(this, "is waiting query");
-            Query query = tunnel.recvbuff();
+        	Query query = recv();
             Log.out(this, "recieve [" + query + "]");
             if(query == null) break;
+            if(query.getMode().equals(Query.Mode.BROADCAST) && getProtocolServer() != null)
+            {
+                getProtocolServer().redirect(query.mode(Query.Mode.NORMAL), this);
+                continue;
+            }
             for(Method control : controls)
             {
             	Control ann = control.getAnnotation(Control.class);
@@ -132,13 +159,11 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
                                     control.invoke(protocol, query.getArgs());
                                     break;
                                 }
-                        	    else if(control.getParameterTypes()[0].equals(Tunnel.class))
-                                {
-                                    control.invoke(protocol, tunnel);
-                                    break;
-                                }
                             default:
-                                control.invoke(protocol, query.getArgs().castToPrimitive(control.getParameterTypes()).toArray());
+                                if(isInObjectQueryMode())
+                                    control.invoke(protocol, query.getArgs().toArray());
+                                else
+                                    control.invoke(protocol, query.getArgs().castToPrimitive(control.getParameterTypes()).toArray());
                         }
                         break;
                     } catch (IllegalAccessException | InvocationTargetException e)

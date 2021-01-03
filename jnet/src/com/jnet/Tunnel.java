@@ -55,7 +55,8 @@ public class Tunnel
         try
         {
             String content = bufferedReader.readLine();
-            return new Query(content);
+            System.err.println(content);
+            return new Query(content, true);
         } catch (IOException e)
         {
         	e.printStackTrace();
@@ -64,7 +65,7 @@ public class Tunnel
         return null;
     }
 
-    public void senobj(Serializable serializable)
+    public void sendobj(Serializable serializable)
     {
         try
         {

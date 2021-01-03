@@ -15,4 +15,5 @@ public @interface ServerProtocol
     String name() default "unnamed";
     boolean pool() default false;
     int maxClients() default 5;
+    boolean objQuery() default false;
 }

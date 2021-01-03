@@ -134,6 +134,19 @@ public class ProtocolServer extends Thread implements ProtocolEntity
         this.socket = socket;
     }
 
+    public synchronized void redirect(Query query, ProtocolHandler from)
+    {
+        Log.out(this, "start broadcast from " + from.getEntityId());
+        for(ProtocolHandler protocolHandler : protocolHandlers)
+        {
+            if(protocolHandler != from)
+            {
+                Log.out(from, "make a broadcast : " + query);
+                protocolHandler.send(query);
+            }
+        }
+    }
+
     @Override
     public String getEntityId()
     {
