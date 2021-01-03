@@ -86,7 +86,7 @@ public class Tunnel
         } catch (Exception e)
         {
             e.printStackTrace();
-            Log.err("Tunnel", "unable to revieve an object");
+            Log.err("Tunnel", "unable to recieve an object");
         }
         return null;
     }

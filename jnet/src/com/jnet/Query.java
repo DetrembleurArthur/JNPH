@@ -10,6 +10,9 @@ public class Query implements Serializable
         NORMAL,
         BROADCAST
     }
+    
+    public static final Object SUCCESS = new Object();
+    public static final Object FAILED = new Object();
 
     private Mode mode;
     private String type;
@@ -78,7 +81,7 @@ public class Query implements Serializable
 
     public void load(String buffer)
     {
-        String[] tokens = buffer.split("#@#");
+        String[] tokens = buffer.split("€€€");
         if(tokens.length > 0)
         {
             type = tokens[0];
@@ -99,7 +102,7 @@ public class Query implements Serializable
 
     public void load(String buffer, Mode mode)
     {
-        String[] tokens = buffer.split("#@#");
+        String[] tokens = buffer.split("€€€");
         if(tokens.length > 0)
         {
             type = tokens[0];
@@ -161,9 +164,9 @@ public class Query implements Serializable
     public String toString()
     {
         StringBuilder buffer = new StringBuilder(type);
-        buffer.append("#@#").append(mode);
+        buffer.append("€€€").append(mode);
         for(Object obj : args)
-            buffer.append("#@#").append(obj.toString());
+            buffer.append("€€€").append(obj.toString());
         return buffer.toString();
     }
 }

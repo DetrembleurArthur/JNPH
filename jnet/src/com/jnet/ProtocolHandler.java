@@ -1,10 +1,13 @@
 package com.jnet;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 
 public class ProtocolHandler extends Thread implements ProtocolEntity
 {
@@ -63,15 +66,18 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
         }
     }
     
-    private void connectTunnel()
+    private void injections()
     {
     	for(Field field : protocol.getClass().getDeclaredFields())
     	{
-    		if(field.isAnnotationPresent(Com.class) && field.getType().equals(Tunnel.class))
+    		if(field.isAnnotationPresent(Com.class))
     		{
     			try
     			{
-					field.set(protocol, tunnel);
+    				if(field.getType().equals(Tunnel.class))
+    					field.set(protocol, tunnel);
+    				else if(field.getType().equals(ProtocolHandler.class))
+    					field.set(protocol, this);
 				} catch (IllegalArgumentException | IllegalAccessException e)
     			{
 					Log.err(this, "tunnel injection failed");
@@ -84,7 +90,7 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
     public void initNet(Socket socket)
     {
         tunnel = new Tunnel(socket);
-        connectTunnel();
+        injections();
     }
 
     public synchronized Tunnel getTunnel()
@@ -114,6 +120,7 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
             query = tunnel.recvobj();
         else
             query = tunnel.recvbuff();
+        Log.out(this, "recieve [" + query + "]");
         return query;
     }
 
@@ -123,6 +130,7 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
             tunnel.sendobj(query);
         else
             tunnel.sendbuff(query);
+        Log.out(this, "send [" + query + "]");
     }
 
     @Override
@@ -133,13 +141,7 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
         {
         	Log.out(this, "is waiting query");
         	Query query = recv();
-            Log.out(this, "recieve [" + query + "]");
             if(query == null) break;
-            if(query.getMode().equals(Query.Mode.BROADCAST) && getProtocolServer() != null)
-            {
-                getProtocolServer().redirect(query.mode(Query.Mode.NORMAL), this);
-                continue;
-            }
             for(Method control : controls)
             {
             	Control ann = control.getAnnotation(Control.class);
@@ -150,21 +152,10 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
                 {
                     try
                     {
-                        switch(control.getParameterCount())
-                        {
-                            case 0:control.invoke(protocol);break;
-                        	case 1:
-                        	    if(control.getParameterTypes()[0].equals(Args.class))
-                                {
-                                    control.invoke(protocol, query.getArgs());
-                                    break;
-                                }
-                            default:
-                                if(isInObjectQueryMode())
-                                    control.invoke(protocol, query.getArgs().toArray());
-                                else
-                                    control.invoke(protocol, query.getArgs().castToPrimitive(control.getParameterTypes()).toArray());
-                        }
+                        Object result = invokeControl(control, query);
+                        Log.out(this, "control result: " + result);
+                        if(result != null)
+                        	manageControlResult(type, result);
                         break;
                     } catch (IllegalAccessException | InvocationTargetException e)
                     {
@@ -178,9 +169,56 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
                     }
                 }
             }
+            if(query.getMode().equals(Query.Mode.BROADCAST) && getProtocolServer() != null)
+            {
+                getProtocolServer().redirect(query.mode(Query.Mode.NORMAL), this);
+            }
         }
         Log.out(this, "is down");
     }
+
+	private Object invokeControl(Method control, Query query) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException
+	{
+		switch(control.getParameterCount())
+        {
+            case 0:
+            	return control.invoke(protocol);
+        	case 1:
+        	    if(control.getParameterTypes()[0].equals(Args.class))
+                {
+        	    	return control.invoke(protocol, query.getArgs());
+                }
+            default:
+            	Object[] args = isInObjectQueryMode() ? query.getArgs().toArray() : query.getArgs().castToPrimitive(control.getParameterTypes()).toArray();
+                if(args.length != control.getParameterCount())
+                {
+                	args = Arrays.copyOf(args, control.getParameterCount());
+                }
+                return control.invoke(protocol, args);
+        }
+	}
+	
+	private void manageControlResult(String type, Object result)
+	{
+		if(result != null)
+		{
+			if(result instanceof Query)
+			{
+				send((Query) result);
+			}
+			else if(result instanceof String)
+			{
+				send(Query.normal((String) result));
+			}
+			else
+			{
+				if(result == Query.SUCCESS)
+					send(Query.success(type));
+				else if(result == Query.FAILED)
+					send(Query.failed(type));
+			}
+		}
+	}
 
 	public ProtocolServer getProtocolServer() {
 		return protocolServer;
@@ -189,6 +227,6 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
     @Override
     public String getEntityId()
     {
-        return "PH(" + (protocol.getClass().isAnnotationPresent(ServerProtocol.class) ? "S" : "C") + "):" + tunnel.getSocket().getInetAddress().getHostAddress() + ":" + tunnel.getSocket().getPort() + ":" + getProtocolName();
+        return "PH(" + (protocol.getClass().isAnnotationPresent(ServerProtocol.class) ? "S" : "C") + "):" + (tunnel != null ? tunnel.getSocket().getInetAddress().getHostAddress() + ":" + tunnel.getSocket().getPort() + ":" + getProtocolName() : "");
     }
 }
