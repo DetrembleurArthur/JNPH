@@ -23,9 +23,9 @@ public class PoolProtocolHandler extends ProtocolHandler
             {
                 while (getProtocolServer().getSocket() == null)
                 {
-                	Log.out(getProtocolName(), " is waiting");
+                	Log.out(this, " is waiting");
                     getProtocolServer().getPoolMonitor().wait();
-                    Log.out(getProtocolName(), " is unlocked");
+                    Log.out(this, " is unlocked");
                 }
                 initNet(getProtocolServer().getSocket());
                 getProtocolServer().setSocket(null);
@@ -52,5 +52,11 @@ public class PoolProtocolHandler extends ProtocolHandler
     			e.printStackTrace();
     		}
     	}
+    }
+
+    @Override
+    public String getEntityId()
+    {
+        return "POOL:" + super.getEntityId();
     }
 }

@@ -1,8 +1,9 @@
 package com.jnet;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Query
+public class Query implements Serializable
 {
     private String type;
     private Args args;

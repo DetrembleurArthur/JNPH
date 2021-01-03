@@ -27,6 +27,12 @@ public class OnDemandProtocolHandler extends ProtocolHandler
 			e.printStackTrace();
 		}
         getProtocolServer().getProtocolHandlers().remove(this);
-        Log.out(getProtocolName(), "is down");
+        Log.out(this, "is down");
     }
+
+	@Override
+	public String getEntityId()
+	{
+		return "ONDE:" + super.getEntityId();
+	}
 }

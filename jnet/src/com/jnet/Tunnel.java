@@ -5,6 +5,7 @@ import java.net.Socket;
 
 public class Tunnel
 {
+    private final Socket socket;
     private BufferedReader bufferedReader;
     private BufferedWriter bufferedWriter;
     private ObjectOutputStream objectOutputStream;
@@ -28,6 +29,12 @@ public class Tunnel
         {
         	Log.err("Tunnel", "unable to init buffered streams");
         }
+        this.socket = socket;
+    }
+
+    public Socket getSocket()
+    {
+        return socket;
     }
 
     public void sendbuff(Query query)

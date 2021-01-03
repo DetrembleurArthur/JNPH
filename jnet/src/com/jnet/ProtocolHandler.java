@@ -6,7 +6,7 @@ import java.lang.reflect.Method;
 import java.net.Socket;
 import java.util.ArrayList;
 
-public class ProtocolHandler extends Thread
+public class ProtocolHandler extends Thread implements ProtocolEntity
 {
     private Tunnel tunnel;
     private Object protocol;
@@ -40,8 +40,8 @@ public class ProtocolHandler extends Thread
     public String getProtocolName()
     {
     	if(protocol.getClass().isAnnotationPresent(ServerProtocol.class))
-    		return "SER:"+protocol.getClass().getAnnotation(ServerProtocol.class).name() + ":"+hashCode();
-    	return "CLI:" + protocol.getClass().getAnnotation(ClientProtocol.class).name() + ":"+hashCode();
+    		return protocol.getClass().getAnnotation(ServerProtocol.class).name();
+    	return protocol.getClass().getAnnotation(ClientProtocol.class).name();
     }
     
     private void initControls()
@@ -51,12 +51,7 @@ public class ProtocolHandler extends Thread
         {
             if(method.isAnnotationPresent(Control.class))
             {
-                if((method.getParameterCount() == 2 && method.getParameterTypes()[0].equals(Tunnel.class) && method.getParameterTypes()[1].equals(Args.class))
-            		|| (method.getParameterCount() == 1 && method.getParameterTypes()[0].equals(Args.class))
-    				|| (method.getParameterCount() == 1 && method.getParameterTypes()[0].equals(Tunnel.class))
-            		|| (method.getParameterCount() == 0))
-                    controls.add(method);
-                else throw new IllegalArgumentException(protocol.getClass().getAnnotation(ServerProtocol.class).name() + " : " + method.getName() + " has a bad prototype");
+                controls.add(method);
             }
         }
         if(controls.isEmpty())
@@ -74,7 +69,7 @@ public class ProtocolHandler extends Thread
 					field.set(protocol, tunnel);
 				} catch (IllegalArgumentException | IllegalAccessException e)
     			{
-					Log.err(getProtocolName(), "tunnel injection failed");
+					Log.err(this, "tunnel injection failed");
 					e.printStackTrace();
 				}
     		}
@@ -114,9 +109,9 @@ public class ProtocolHandler extends Thread
         while(running)
         {
 
-        	Log.out(getProtocolName(), "is waiting query");
+        	Log.out(this, "is waiting query");
             Query query = tunnel.recvbuff();
-            Log.out(getProtocolName(), "recieve [" + query + "]");
+            Log.out(this, "recieve [" + query + "]");
             if(query == null) break;
             for(Method control : controls)
             {
@@ -130,31 +125,45 @@ public class ProtocolHandler extends Thread
                     {
                         switch(control.getParameterCount())
                         {
-                        	case 2:control.invoke(protocol, tunnel, query.getArgs());break;
+                            case 0:control.invoke(protocol);break;
                         	case 1:
-                        		control.invoke(protocol, 
-                        		control.getParameterTypes()[0].equals(Tunnel.class)
-                        		? tunnel : query.getArgs());
-                        		break;
-                        	case 0:control.invoke(protocol);break;
-                        }	
+                        	    if(control.getParameterTypes()[0].equals(Args.class))
+                                {
+                                    control.invoke(protocol, query.getArgs());
+                                    break;
+                                }
+                        	    else if(control.getParameterTypes()[0].equals(Tunnel.class))
+                                {
+                                    control.invoke(protocol, tunnel);
+                                    break;
+                                }
+                            default:
+                                control.invoke(protocol, query.getArgs().castToPrimitive(control.getParameterTypes()).toArray());
+                        }
                         break;
                     } catch (IllegalAccessException | InvocationTargetException e)
                     {
                         e.printStackTrace();
-                        Log.err(getProtocolName(), "bad control invocation");
+                        Log.err(this, "bad control invocation");
                     }
                     catch (Exception e)
                     {
-                    	Log.err(getProtocolName(), "control exception");
+                    	Log.err(this, "control exception");
                         e.printStackTrace();
                     }
                 }
             }
         }
+        Log.out(this, "is down");
     }
 
 	public ProtocolServer getProtocolServer() {
 		return protocolServer;
 	}
+
+    @Override
+    public String getEntityId()
+    {
+        return "PH(" + (protocol.getClass().isAnnotationPresent(ServerProtocol.class) ? "S" : "C") + "):" + tunnel.getSocket().getInetAddress().getHostAddress() + ":" + tunnel.getSocket().getPort() + ":" + getProtocolName();
+    }
 }

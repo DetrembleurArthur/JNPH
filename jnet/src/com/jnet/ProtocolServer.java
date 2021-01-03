@@ -7,7 +7,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
-public class ProtocolServer extends Thread
+public class ProtocolServer extends Thread implements ProtocolEntity
 {
     private final Object poolMonitor;
     private Class<?> protocol;
@@ -60,6 +60,7 @@ public class ProtocolServer extends Thread
                 protocolHandler.start();
             } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
             {
+                Log.err(this, "unable to start pool n°" + (i+1));
                 e.printStackTrace();
             }
         }
@@ -67,7 +68,7 @@ public class ProtocolServer extends Thread
     
     public String getManagedProtocolName()
     {
-    	return "LST:"+getProtocol().getAnnotation(ServerProtocol.class).name() + ":"+hashCode();
+    	return getProtocol().getAnnotation(ServerProtocol.class).name();
     }
 
     @Override
@@ -81,16 +82,16 @@ public class ProtocolServer extends Thread
         {
             try
             {
-                Log.out(getManagedProtocolName(),"listen on " + serverSocket.getInetAddress().getHostAddress());
+                Log.out(this,"listen on " + serverSocket.getInetAddress().getHostAddress());
                 Socket cliSocket = serverSocket.accept();
-                Log.out(getManagedProtocolName(), "client accepted on " + cliSocket.getInetAddress().getHostName() + ":" + cliSocket.getPort());
+                Log.out(this, "client accepted on " + cliSocket.getInetAddress().getHostName() + ":" + cliSocket.getPort());
                 if(pool)
                 {
                 	synchronized (getPoolMonitor())
                 	{
                 		setSocket(cliSocket);
                         getPoolMonitor().notify();
-                        Log.out(getManagedProtocolName(), "notify");
+                        Log.out(this, "notify");
 					}
                 }
                 else
@@ -109,11 +110,11 @@ public class ProtocolServer extends Thread
             } catch (IOException e)
             {
             	e.printStackTrace();
-            	Log.err(getManagedProtocolName(), "connection error");
+            	Log.err(this, "connection error");
             } catch (IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e)
             {
             	e.printStackTrace();
-            	Log.err(getManagedProtocolName(), "protocol instantiation error");
+            	Log.err(this, "protocol instantiation error");
             }
         }
     }
@@ -131,5 +132,11 @@ public class ProtocolServer extends Thread
     public synchronized void setSocket(Socket socket)
     {
         this.socket = socket;
+    }
+
+    @Override
+    public String getEntityId()
+    {
+        return "PS:" + getManagedProtocolName() + ":" + getServerSocket().getInetAddress().getHostAddress() + ":" + getServerSocket().getLocalPort();
     }
 }

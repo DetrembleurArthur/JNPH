@@ -5,7 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
 import java.util.ArrayList;
 
-public class ProtocolClient implements Runnable
+public class ProtocolClient implements Runnable, ProtocolEntity
 {
     private Socket socket;
     private Class<?> protocol;
@@ -46,18 +46,26 @@ public class ProtocolClient implements Runnable
         {
             ClientProtocol ann = protocol.getAnnotation(ClientProtocol.class);
             Socket socket = new Socket(ann.ip(), ann.port());
-            System.err.println("client connected");
             ProtocolHandler protocolHandler = ProtocolHandler.create(protocol.getConstructor().newInstance(), null);
             protocolHandler.initNet(socket);
             protocolHandler.start();
             this.protocolHandler = protocolHandler;
-            System.out.println("client listen on " + socket.getInetAddress().getHostAddress());
+            this.socket = socket;
+            Log.out(this, "client started on " + socket.getInetAddress().getHostAddress());
         } catch (IOException | NoSuchMethodException e)
         {
-            System.err.println(protocol.getCanonicalName() + " client handler can not be connected to the server");
+            e.printStackTrace();
+           Log.err(this, protocol.getCanonicalName() + " client handler can not be connected to the server");
         } catch (IllegalAccessException | InstantiationException | InvocationTargetException e)
         {
-            System.err.println(protocol.getCanonicalName() + " client handler can not be instantiate");
+            e.printStackTrace();
+            Log.err(this, protocol.getCanonicalName() + " client handler can not be instantiate");
         }
+    }
+
+    @Override
+    public String getEntityId()
+    {
+        return "PC:" + socket.getInetAddress().getHostAddress() + ":" + socket.getPort();
     }
 }

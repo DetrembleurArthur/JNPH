@@ -8,8 +8,15 @@ import com.jnet.ProtocolMaster;
 import com.jnet.Query;
 import com.jnet.Tunnel;
 
+import javax.swing.*;
+
 
 public class Server {
+
+	public static void test(String ... args)
+	{
+		System.out.println(args.length);
+	}
 
 	public static void main(String[] args)
 	{
@@ -28,6 +35,17 @@ public class Server {
 		{
 			System.err.println("ping");
 			tunnel.sendbuff(Query.normal("pong"));
+			Query query = tunnel.recvobj();
+			System.err.println(query.getType());
+			for(Object o : query.getArgs())
+				for(Object ss : (Double[])o)
+					System.err.println(ss);
+		}
+
+		@Control
+		public void test(Character c)
+		{
+			System.out.println(c);
 		}
 	}
 

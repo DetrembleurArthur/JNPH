@@ -3,12 +3,15 @@ package com.jnet;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public final class ProtocolMaster implements Runnable
+public final class ProtocolMaster implements Runnable, ProtocolEntity
 {
     private ArrayList<Class<?>> clientProtocolClasses;
     private ArrayList<Class<?>> serverProtocolClasses;
     private ArrayList<ProtocolServer> protocolServers;
     private ArrayList<ProtocolClient> protocolClients;
+    private int id;
+
+    private static int counter = 0;
     
     public static ProtocolMaster launch(Class<?> ... protocolClasses)
     {
@@ -24,6 +27,7 @@ public final class ProtocolMaster implements Runnable
         register(protocolClasses);
         protocolServers = new ArrayList<>();
         protocolClients = new ArrayList<>();
+        id = ++counter;
     }
 
     private void register(Class<?> ... protocolClasses)
@@ -71,7 +75,7 @@ public final class ProtocolMaster implements Runnable
         } catch (IOException e)
         {
             e.printStackTrace();
-            Log.err("ProtocolMaster", "starting server failed");
+            Log.err(this, "starting server failed");
         }
         return null;
     }
@@ -145,4 +149,10 @@ public final class ProtocolMaster implements Runnable
 		}
 		return null;
 	}
+
+    @Override
+    public String getEntityId()
+    {
+        return "PM(" + id + ")";
+    }
 }
