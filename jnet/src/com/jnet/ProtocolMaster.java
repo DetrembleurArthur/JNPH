@@ -70,7 +70,7 @@ public final class ProtocolMaster implements Runnable, ProtocolEntity
     {
         try
         {
-            ProtocolServer protocolServer = new ProtocolServer(protocolClass);
+            ProtocolServer protocolServer = new ProtocolServer(protocolClass, this);
             protocolServer.start();
             return protocolServer;
         } catch (IOException e)
@@ -151,6 +151,29 @@ public final class ProtocolMaster implements Runnable, ProtocolEntity
 		}
 		return null;
 	}
+
+    public synchronized void redirect(Query query, ProtocolHandler from)
+    {
+        Log.out(this, "start broadcast from " + from.getEntityId());
+        for(ProtocolServer protocolServer : protocolServers)
+        {
+            Log.out(from, "make a broadcast : " + query);
+            protocolServer.redirect(query, from);
+        }
+    }
+
+    public synchronized void redirect(Query query, ProtocolHandler from, String protocolName)
+    {
+        Log.out(this, "start broadcast from " + from.getEntityId());
+        for(ProtocolServer protocolServer : protocolServers)
+        {
+            if(protocolServer.getOptions().getProperty("name").equals(protocolName))
+            {
+                Log.out(from, "make a broadcast : " + query);
+                protocolServer.redirect(query, from);
+            }
+        }
+    }
 
     @Override
     public String getEntityId()

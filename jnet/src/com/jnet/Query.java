@@ -8,7 +8,10 @@ public class Query implements Serializable
     public enum Mode
     {
         NORMAL,
-        BROADCAST
+        DISCOVERY,
+        CLASSIC_BROADCAST,
+        GENERAL_BROADCAST,
+        PROTOCOL_BROADCAST
     }
     
     public static final Object SUCCESS = new Object();
@@ -149,7 +152,27 @@ public class Query implements Serializable
     	return this;
     }
 
-    public Query mode(Mode mode)
+    Query discovery()
+    {
+        return mode(Mode.DISCOVERY);
+    }
+
+    public Query classic_broadcast()
+    {
+        return mode(Mode.CLASSIC_BROADCAST);
+    }
+
+    public Query general_broadcast()
+    {
+        return mode(Mode.GENERAL_BROADCAST);
+    }
+
+    public Query protocol_broadcast(String protocolName)
+    {
+        return mode(Mode.PROTOCOL_BROADCAST).pack(protocolName);
+    }
+
+    Query mode(Mode mode)
     {
         this.mode = mode;
         return this;

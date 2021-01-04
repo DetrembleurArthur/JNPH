@@ -140,6 +140,58 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
     public void run()
     {
         running = true;
+        if(getProtocolServer() == null)
+        {
+            send(Query.normal(getOptions().getProperty("name")).mode(Query.Mode.DISCOVERY));
+            Query query = recv();
+            if(query.getMode().equals(Query.Mode.DISCOVERY))
+            {
+                if(query.getArgs().size() == 0)
+                {
+                    getOptions().setProperty("name", query.getType());
+                    Log.out(this, "Protocol discovery success: " + getOptions().getProperty("name"));
+                }
+                else
+                {
+                    running = false;
+                    Log.err(this, "Protocol discovery failed");
+                }
+            }
+            else
+            {
+                running = false;
+                Log.err(this, "Protocol discovery failed");
+            }
+        }
+        else
+        {
+            Query query = recv();
+            if(query.getMode().equals(Query.Mode.DISCOVERY))
+            {
+                if(query.getType().equals("..."))
+                {
+                    query.setType(getOptions().getProperty("name"));
+                    send(query);
+                }
+                else
+                {
+                    if(query.getType().equals(getOptions().getProperty("name")))
+                    {
+                        send(query);
+                    }
+                    else
+                    {
+                        query.pack("error");
+                        send(query);
+                        running = false;
+                    }
+                }
+            }
+            else
+            {
+                running = false;
+            }
+        }
         while(running)
         {
         	Log.out(this, "is waiting query");
@@ -147,18 +199,34 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
             if(query == null) break;
             for(Method control : controls)
             {
-                if(testControl(query, control))
+                if(manageControl(query, control))
                     break;
             }
-            if(query.getMode().equals(Query.Mode.BROADCAST) && getProtocolServer() != null)
-            {
-                getProtocolServer().redirect(query.mode(Query.Mode.NORMAL), this);
-            }
+            manageQueryModes(query);
         }
         Log.out(this, "is down");
     }
 
-    private boolean testControl(Query query, Method control)
+    private void manageQueryModes(Query query)
+    {
+        if(!query.getMode().equals(Query.Mode.NORMAL))
+        {
+            if(query.getMode().equals(Query.Mode.CLASSIC_BROADCAST) && getProtocolServer() != null)
+            {
+                getProtocolServer().redirect(query.mode(Query.Mode.NORMAL), this);
+            }
+            else if(query.getMode().equals(Query.Mode.GENERAL_BROADCAST) && getProtocolServer() != null)
+            {
+                getProtocolServer().getMaster().redirect(query.mode(Query.Mode.NORMAL), this);
+            }
+            else if(query.getMode().equals(Query.Mode.PROTOCOL_BROADCAST) && getProtocolServer() != null)
+            {
+                getProtocolServer().getMaster().redirect(query.mode(Query.Mode.NORMAL), this, (String) query.getArgs().get(0));
+            }
+        }
+    }
+
+    private boolean manageControl(Query query, Method control)
     {
         Control ann = control.getAnnotation(Control.class);
         String type = ann.type();

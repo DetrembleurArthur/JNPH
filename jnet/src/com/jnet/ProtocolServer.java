@@ -17,9 +17,11 @@ public class ProtocolServer extends Thread implements ProtocolEntity
     private final ArrayList<ProtocolHandler> protocolHandlers;
     private Socket socket=null;
     private final Options options;
+    private final ProtocolMaster master;
     
-    public ProtocolServer(Class<?> protocol) throws IOException
+    public ProtocolServer(Class<?> protocol, ProtocolMaster master) throws IOException
     {
+        this.master = master;
         running = false;
         this.protocol = protocol;
         if(protocol.getAnnotation(ServerProtocol.class).ip().isEmpty())
@@ -148,6 +150,11 @@ public class ProtocolServer extends Thread implements ProtocolEntity
                 protocolHandler.send(query);
             }
         }
+    }
+
+    public synchronized ProtocolMaster getMaster()
+    {
+        return master;
     }
 
     @Override

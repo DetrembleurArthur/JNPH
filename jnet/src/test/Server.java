@@ -14,8 +14,8 @@ public class Server {
 	public ProtocolHandler ph;
 
 	@Control
-	public Query number(Double num)
+	public void alert(String message)
 	{
-		return Query.normal("number").pack(Math.sqrt(num));
+		System.err.println("'" + message + "' will be broadcasted");
 	}
 }
