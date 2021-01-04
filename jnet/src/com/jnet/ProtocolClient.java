@@ -3,13 +3,13 @@ package com.jnet;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
-import java.util.ArrayList;
 
 public class ProtocolClient implements Runnable, ProtocolEntity
 {
     private Socket socket;
-    private Class<?> protocol;
+    private final Class<?> protocol;
     private ProtocolHandler protocolHandler;
+    private final Options options;
 
     public ProtocolClient(Class<?> protocol)
     {
@@ -21,6 +21,7 @@ public class ProtocolClient implements Runnable, ProtocolEntity
         {
             this.protocol = protocol;
         }
+        options = ProtocolEntity.getOptions(protocol.getAnnotation(ClientProtocol.class));
     }
 
 
@@ -67,5 +68,11 @@ public class ProtocolClient implements Runnable, ProtocolEntity
     public String getEntityId()
     {
         return "PC:" + socket.getInetAddress().getHostAddress() + ":" + socket.getPort();
+    }
+
+    @Override
+    public Options getOptions()
+    {
+        return options;
     }
 }

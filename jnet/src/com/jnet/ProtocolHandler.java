@@ -1,21 +1,20 @@
 package com.jnet;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 
 public class ProtocolHandler extends Thread implements ProtocolEntity
 {
     private Tunnel tunnel;
-    private Object protocol;
+    private final Object protocol;
     private ArrayList<Method> controls;
     private boolean running;
     private final ProtocolServer protocolServer;
+    private final Options options;
     
     public static ProtocolHandler create(Object protocol, ProtocolServer server)
     {
@@ -37,6 +36,10 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
         running = false;
         this.protocol = protocol;
         protocolServer = sup;
+        if(sup != null)
+            options = ProtocolEntity.getOptions(protocol.getClass().getAnnotation(ServerProtocol.class));
+        else
+            options = ProtocolEntity.getOptions(protocol.getClass().getAnnotation(ClientProtocol.class));
         initControls();
     }
     
@@ -113,7 +116,7 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
         return running;
     }
 
-    private Query recv()
+    public Query recv()
     {
         Query query;
         if(isInObjectQueryMode())
@@ -144,30 +147,8 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
             if(query == null) break;
             for(Method control : controls)
             {
-            	Control ann = control.getAnnotation(Control.class);
-                String type = ann.type();
-                if(type.equals("/"))
-                    type = control.getName();
-                if(query.is(type))
-                {
-                    try
-                    {
-                        Object result = invokeControl(control, query);
-                        Log.out(this, "control result: " + result);
-                        if(result != null)
-                        	manageControlResult(type, result);
-                        break;
-                    } catch (IllegalAccessException | InvocationTargetException e)
-                    {
-                        e.printStackTrace();
-                        Log.err(this, "bad control invocation");
-                    }
-                    catch (Exception e)
-                    {
-                    	Log.err(this, "control exception");
-                        e.printStackTrace();
-                    }
-                }
+                if(testControl(query, control))
+                    break;
             }
             if(query.getMode().equals(Query.Mode.BROADCAST) && getProtocolServer() != null)
             {
@@ -175,6 +156,35 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
             }
         }
         Log.out(this, "is down");
+    }
+
+    private boolean testControl(Query query, Method control)
+    {
+        Control ann = control.getAnnotation(Control.class);
+        String type = ann.type();
+        if(type.equals("/"))
+            type = control.getName();
+        if(query.is(type))
+        {
+            try
+            {
+                Object result = invokeControl(control, query);
+                Log.out(this, "control result: " + result);
+                if(result != null)
+                    manageControlResult(type, result);
+                return true;
+            } catch (IllegalAccessException | InvocationTargetException e)
+            {
+                e.printStackTrace();
+                Log.err(this, "bad control invocation");
+            }
+            catch (Exception e)
+            {
+                Log.err(this, "control exception");
+                e.printStackTrace();
+            }
+        }
+        return false;
     }
 
 	private Object invokeControl(Method control, Query query) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException
@@ -216,6 +226,8 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
 					send(Query.success(type));
 				else if(result == Query.FAILED)
 					send(Query.failed(type));
+				else
+				    send(Query.normal(type).pack(result));
 			}
 		}
 	}
@@ -228,5 +240,11 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
     public String getEntityId()
     {
         return "PH(" + (protocol.getClass().isAnnotationPresent(ServerProtocol.class) ? "S" : "C") + "):" + (tunnel != null ? tunnel.getSocket().getInetAddress().getHostAddress() + ":" + tunnel.getSocket().getPort() + ":" + getProtocolName() : "");
+    }
+
+    @Override
+    public Options getOptions()
+    {
+        return options;
     }
 }

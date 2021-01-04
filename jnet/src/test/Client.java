@@ -2,71 +2,24 @@ package test;
 
 import com.jnet.*;
 
-import java.io.Serializable;
-import java.util.Scanner;
+import javax.swing.*;
 
 
-public class Client {
-
-
-	public static class User implements Serializable
-	{
-		private String name;
-		private int age;
-
-		public User(String name, int age)
-		{
-			this.name = name;
-			this.age = age;
-		}
-
-		public String getName()
-		{
-			return name;
-		}
-
-		public int getAge()
-		{
-			return age;
-		}
-	}
-
+@ClientProtocol(objQuery = true, name = "Test")
+public class Client
+{
 	public static void main(String[] args)
 	{
-		ProtocolMaster master = ProtocolMaster.launch(MyCLIProtocol.class);
-		ProtocolClient cli = master.getProtocolClient(MyCLIProtocol.class);
+		ProtocolMaster master = ProtocolMaster.launch(Client.class);
+		ProtocolClient cli = master.getProtocolClient(Client.class);
 		ProtocolHandler handler = cli.getProtocolHandler();
 
-		Tunnel tunnel = handler.getTunnel();
-
-
-		Scanner scanner = new Scanner(System.in);
-		System.err.println("wait....");
-		scanner.next();
-
-		System.err.println("...");
-
-		tunnel.sendobj(Query.normal("ping").mode(Query.Mode.BROADCAST));
+		handler.send(Query.normal("number").pack(Double.parseDouble(JOptionPane.showInputDialog("Enter a number"))));
 	}
-	
-	
-	@ClientProtocol(name = "PingPong", objQuery = true)
-	public static class MyCLIProtocol
+
+	@Control
+	public void number(Double num)
 	{
-		@Com
-		public Tunnel tunnel;
-
-		@Control
-		public void pong()
-		{
-			System.err.println("pong");
-		}
-
-		@Control
-		public void ping()
-		{
-			System.err.println("ping");
-			tunnel.sendobj(Query.normal("pong").mode(Query.Mode.BROADCAST));
-		}
+		JOptionPane.showMessageDialog(null, String.valueOf(num));
 	}
 }

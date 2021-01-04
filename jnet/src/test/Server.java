@@ -2,25 +2,20 @@ package test;
 
 import com.jnet.*;
 
-
+@ServerProtocol(name = "Test", objQuery = true)
 public class Server {
 
 	public static void main(String[] args)
 	{
-		ProtocolMaster.launch(MyProtocol.class);
+		ProtocolMaster.launch(Server.class);
 	}
-	
-	@ServerProtocol(name = "PingPong", objQuery = true)
-	public static class MyProtocol
-	{
-		@Com
-		public Tunnel tunnel;
 
-		@Control
-		public void hello(String[] elems)
-		{
-			for(String e : elems)
-				System.out.println("### " + e);
-		}
+	@Com
+	public ProtocolHandler ph;
+
+	@Control
+	public Query number(Double num)
+	{
+		return Query.normal("number").pack(Math.sqrt(num));
 	}
 }

@@ -1,5 +1,6 @@
 package com.jnet;
 
+import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
@@ -10,11 +11,12 @@ import java.util.ArrayList;
 public class ProtocolServer extends Thread implements ProtocolEntity
 {
     private final Object poolMonitor;
-    private Class<?> protocol;
-    private ServerSocket serverSocket;
+    private final Class<?> protocol;
+    private final ServerSocket serverSocket;
     private boolean running;
-    private ArrayList<ProtocolHandler> protocolHandlers;
+    private final ArrayList<ProtocolHandler> protocolHandlers;
     private Socket socket=null;
+    private final Options options;
     
     public ProtocolServer(Class<?> protocol) throws IOException
     {
@@ -26,6 +28,7 @@ public class ProtocolServer extends Thread implements ProtocolEntity
         	serverSocket = new ServerSocket(protocol.getAnnotation(ServerProtocol.class).port(), 50, InetAddress.getByName(protocol.getAnnotation(ServerProtocol.class).ip()));
         protocolHandlers = new ArrayList<>();
         poolMonitor = new Object();
+        options = ProtocolEntity.getOptions(protocol.getAnnotation(ServerProtocol.class));
     }
 
     public ServerSocket getServerSocket()
@@ -151,5 +154,11 @@ public class ProtocolServer extends Thread implements ProtocolEntity
     public String getEntityId()
     {
         return "PS:" + getManagedProtocolName() + ":" + getServerSocket().getInetAddress().getHostAddress() + ":" + getServerSocket().getLocalPort();
+    }
+
+    @Override
+    public Options getOptions()
+    {
+        return options;
     }
 }

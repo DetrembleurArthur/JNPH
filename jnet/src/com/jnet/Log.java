@@ -1,13 +1,12 @@
 package com.jnet;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 public final class Log
 {
 	public static void out(String who, String msg)
 	{
-		System.out.println("[" + who + "] " + LocalDateTime.now().toString().replaceFirst("T", " at ") + " => " + msg);
+		System.out.println("\033[96m[" + who + "]\033[0m \033[94m" + LocalDateTime.now().toString().replaceFirst("T", " at ") + "\033[0m => " + msg);
 	}
 	
 	public static void err(String who, String msg)

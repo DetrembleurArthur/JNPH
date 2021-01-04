@@ -166,7 +166,7 @@ public class Query implements Serializable
         StringBuilder buffer = new StringBuilder(type);
         buffer.append("€€€").append(mode);
         for(Object obj : args)
-            buffer.append("€€€").append(obj.toString());
+            buffer.append("€€€").append(obj.toString().replace("€€€", "€"));
         return buffer.toString();
     }
 }
