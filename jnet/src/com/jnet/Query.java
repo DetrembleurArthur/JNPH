@@ -70,6 +70,12 @@ public class Query implements Serializable
         args.add(arg);
         return this;
     }
+    
+    public Query packfirst(Object arg)
+    {
+        args.add(0, arg);
+        return this;
+    }
 
     public Query packall(ArrayList<?> objects)
     {
@@ -169,7 +175,7 @@ public class Query implements Serializable
 
     public Query protocol_broadcast(String protocolName)
     {
-        return mode(Mode.PROTOCOL_BROADCAST).pack(protocolName);
+        return mode(Mode.PROTOCOL_BROADCAST).packfirst(protocolName);
     }
 
     Query mode(Mode mode)

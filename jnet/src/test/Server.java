@@ -1,21 +1,45 @@
 package test;
 
-import com.jnet.*;
+import com.jnet.Args;
+import com.jnet.Com;
+import com.jnet.Control;
+import com.jnet.ProtocolHandler;
+import com.jnet.ServerProtocol;
+import com.jnet.ProtocolMaster;
+import com.jnet.Query;
+import com.jnet.Tunnel;
 
-@ServerProtocol(name = "Test", objQuery = true)
-public class Server {
-
+public class Server
+{
 	public static void main(String[] args)
 	{
-		ProtocolMaster.launch(Server.class);
+		ProtocolMaster.launch(P1.class, P2.class);
 	}
-
-	@Com
-	public ProtocolHandler ph;
-
-	@Control
-	public void alert(String message)
+	
+	
+	@ServerProtocol(name="Sqrt", objQuery = false, port = 2000)
+	public static class P1
 	{
-		System.err.println("'" + message + "' will be broadcasted");
+		@Com
+		public ProtocolHandler handler;
+		
+		@Control
+		public Object square(Double n)
+		{
+			return Math.sqrt(n);
+		}
+	}
+	
+	@ServerProtocol(name="Pow", objQuery = false, port = 3000)
+	public static class P2
+	{
+		@Com
+		public ProtocolHandler handler;
+		
+		@Control
+		public Object pow(Double n)
+		{
+			return n * n;
+		}
 	}
 }

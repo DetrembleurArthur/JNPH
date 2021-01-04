@@ -38,7 +38,18 @@ public final class ProtocolMaster implements Runnable, ProtocolEntity
             if(protocolClass.isAnnotationPresent(ServerProtocol.class))
             {
                 if(!serverProtocolClasses.contains(protocolClass))
+                {
+                	for(Class<?> spc : serverProtocolClasses)
+                	{
+                		if(spc.getAnnotation(ServerProtocol.class).name()
+                				.equals(protocolClass.getAnnotation(ServerProtocol.class).name()))
+                		{
+                			Log.err(this, "protocol name duplicated... : " + spc.getAnnotation(ServerProtocol.class).name());
+                			throw new IllegalArgumentException();
+                		}
+                	}
                     serverProtocolClasses.add(protocolClass);
+                }
             }
             else if(protocolClass.isAnnotationPresent(ClientProtocol.class))
             {
@@ -154,22 +165,23 @@ public final class ProtocolMaster implements Runnable, ProtocolEntity
 
     public synchronized void redirect(Query query, ProtocolHandler from)
     {
-        Log.out(this, "start broadcast from " + from.getEntityId());
+        Log.out(this, "search server for broadcast from " + from.getEntityId());
         for(ProtocolServer protocolServer : protocolServers)
         {
-            Log.out(from, "make a broadcast : " + query);
+            Log.out(from, "find server for broadcast : " + query);
             protocolServer.redirect(query, from);
         }
     }
-
+   
     public synchronized void redirect(Query query, ProtocolHandler from, String protocolName)
     {
         Log.out(this, "start broadcast from " + from.getEntityId());
         for(ProtocolServer protocolServer : protocolServers)
         {
-            if(protocolServer.getOptions().getProperty("name").equals(protocolName))
+        	if(protocolServer.getOptions().getProperty("name").equals(protocolName))
             {
                 Log.out(from, "make a broadcast : " + query);
+                query.getArgs().remove(0);
                 protocolServer.redirect(query, from);
             }
         }

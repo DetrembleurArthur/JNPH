@@ -12,6 +12,6 @@ public @interface ClientProtocol
 {
     int port() default 50000;
     String ip() default "127.0.0.1";
-    String name() default "unnamed";
+    String name() default "...";
     boolean objQuery() default false;
 }

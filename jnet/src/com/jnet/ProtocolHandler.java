@@ -6,13 +6,14 @@ import java.lang.reflect.Method;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ProtocolHandler extends Thread implements ProtocolEntity
 {
     private Tunnel tunnel;
     private final Object protocol;
     private ArrayList<Method> controls;
-    private boolean running;
+    private AtomicBoolean running = new AtomicBoolean(false);
     private final ProtocolServer protocolServer;
     private final Options options;
     
@@ -33,7 +34,6 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
 
     public ProtocolHandler(Object protocol, ProtocolServer sup)
     {
-        running = false;
         this.protocol = protocol;
         protocolServer = sup;
         if(sup != null)
@@ -113,7 +113,7 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
 
     public synchronized boolean isRunning()
     {
-        return running;
+        return running.get();
     }
 
     public Query recv()
@@ -139,7 +139,6 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
     @Override
     public void run()
     {
-        running = true;
         if(getProtocolServer() == null)
         {
             send(Query.normal(getOptions().getProperty("name")).mode(Query.Mode.DISCOVERY));
@@ -148,23 +147,23 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
             {
                 if(query.getArgs().size() == 0)
                 {
+                	running.set(true);
                     getOptions().setProperty("name", query.getType());
                     Log.out(this, "Protocol discovery success: " + getOptions().getProperty("name"));
                 }
                 else
                 {
-                    running = false;
                     Log.err(this, "Protocol discovery failed");
                 }
             }
             else
             {
-                running = false;
                 Log.err(this, "Protocol discovery failed");
             }
         }
         else
         {
+        	running.set(true);
             Query query = recv();
             if(query.getMode().equals(Query.Mode.DISCOVERY))
             {
@@ -183,16 +182,16 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
                     {
                         query.pack("error");
                         send(query);
-                        running = false;
+                        running.set(false);
                     }
                 }
             }
             else
             {
-                running = false;
+                running.set(false);
             }
         }
-        while(running)
+        while(running.get())
         {
         	Log.out(this, "is waiting query");
         	Query query = recv();
@@ -298,6 +297,12 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
 				    send(Query.normal(type).pack(result));
 			}
 		}
+	}
+	
+	public ProtocolHandler waitStarting()
+	{
+		while(!running.get());
+		return this;
 	}
 
 	public ProtocolServer getProtocolServer() {

@@ -55,9 +55,8 @@ public class Tunnel
         try
         {
             String content = bufferedReader.readLine();
-            System.err.println(content);
             return new Query(content, true);
-        } catch (IOException e)
+        } catch (Exception e)
         {
         	e.printStackTrace();
         	Log.err("Tunnel", "unable to recieve buffer");

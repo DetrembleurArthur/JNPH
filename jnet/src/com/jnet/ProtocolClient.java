@@ -39,6 +39,11 @@ public class ProtocolClient implements Runnable, ProtocolEntity
     {
         return protocolHandler;
     }
+    
+    public synchronized ProtocolHandler getSafeProtocolHandler()
+    {
+        return protocolHandler.waitStarting();
+    }
 
     @Override
     public void run()
