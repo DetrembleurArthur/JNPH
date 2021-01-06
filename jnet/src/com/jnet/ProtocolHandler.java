@@ -8,38 +8,25 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ProtocolHandler extends Thread implements ProtocolEntity
+public abstract class ProtocolHandler extends Thread implements ProtocolEntity
 {
-    private Tunnel tunnel;
-    private final Object protocol;
-    private ArrayList<Method> controls;
-    private AtomicBoolean running = new AtomicBoolean(false);
-    private final ProtocolServer protocolServer;
-    private final Options options;
+    protected Tunnel tunnel;
+    protected final Object protocol;
+    protected ArrayList<Method> controls;
+    protected AtomicBoolean running = new AtomicBoolean(false);
+    protected final Options options;
     
     public static ProtocolHandler create(Object protocol, ProtocolServer server)
     {
     	if(server == null)
-    		return new ProtocolHandler(protocol, server);
-    	boolean pool = protocol.getClass().getAnnotation(ServerProtocol.class).pool();
-    	if(pool)
-    	{
-    		return new PoolProtocolHandler(protocol, server);
-    	}
-    	else
-    	{
-    		return new OnDemandProtocolHandler(protocol, server);
-    	}
+    		return ProtocolHandlerClient.create(protocol);
+    	return ProtocolHandlerServer.create(protocol, server);
     }
 
-    public ProtocolHandler(Object protocol, ProtocolServer sup)
+    public ProtocolHandler(Object protocol)
     {
         this.protocol = protocol;
-        protocolServer = sup;
-        if(sup != null)
-            options = ProtocolEntity.getOptions(protocol.getClass().getAnnotation(ServerProtocol.class));
-        else
-            options = ProtocolEntity.getOptions(protocol.getClass().getAnnotation(ClientProtocol.class));
+        options = ProtocolEntity.getOptions(protocol.getClass());
         initControls();
     }
     
@@ -135,63 +122,14 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
             tunnel.sendbuff(query);
         Log.out(this, "send [" + query + "]");
     }
+    
+    protected abstract void handshake();
 
     @Override
     public void run()
     {
-        if(getProtocolServer() == null)
-        {
-            send(Query.normal(getOptions().getProperty("name")).mode(Query.Mode.DISCOVERY));
-            Query query = recv();
-            if(query.getMode().equals(Query.Mode.DISCOVERY))
-            {
-                if(query.getArgs().size() == 0)
-                {
-                	running.set(true);
-                    getOptions().setProperty("name", query.getType());
-                    Log.out(this, "Protocol discovery success: " + getOptions().getProperty("name"));
-                }
-                else
-                {
-                    Log.err(this, "Protocol discovery failed");
-                }
-            }
-            else
-            {
-                Log.err(this, "Protocol discovery failed");
-            }
-        }
-        else
-        {
-        	running.set(true);
-            Query query = recv();
-            if(query.getMode().equals(Query.Mode.DISCOVERY))
-            {
-                if(query.getType().equals("..."))
-                {
-                    query.setType(getOptions().getProperty("name"));
-                    send(query);
-                }
-                else
-                {
-                    if(query.getType().equals(getOptions().getProperty("name")))
-                    {
-                        send(query);
-                    }
-                    else
-                    {
-                        query.pack("error");
-                        send(query);
-                        running.set(false);
-                    }
-                }
-            }
-            else
-            {
-                running.set(false);
-            }
-        }
-        while(running.get())
+		handshake();
+		while(running.get())
         {
         	Log.out(this, "is waiting query");
         	Query query = recv();
@@ -203,29 +141,12 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
             }
             manageQueryModes(query);
         }
-        Log.out(this, "is down");
+    	Log.out(this, "is down");
     }
 
-    private void manageQueryModes(Query query)
-    {
-        if(!query.getMode().equals(Query.Mode.NORMAL))
-        {
-            if(query.getMode().equals(Query.Mode.CLASSIC_BROADCAST) && getProtocolServer() != null)
-            {
-                getProtocolServer().redirect(query.mode(Query.Mode.NORMAL), this);
-            }
-            else if(query.getMode().equals(Query.Mode.GENERAL_BROADCAST) && getProtocolServer() != null)
-            {
-                getProtocolServer().getMaster().redirect(query.mode(Query.Mode.NORMAL), this);
-            }
-            else if(query.getMode().equals(Query.Mode.PROTOCOL_BROADCAST) && getProtocolServer() != null)
-            {
-                getProtocolServer().getMaster().redirect(query.mode(Query.Mode.NORMAL), this, (String) query.getArgs().get(0));
-            }
-        }
-    }
+    protected abstract void manageQueryModes(Query query);
 
-    private boolean manageControl(Query query, Method control)
+    protected boolean manageControl(Query query, Method control)
     {
         Control ann = control.getAnnotation(Control.class);
         String type = ann.type();
@@ -254,7 +175,7 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
         return false;
     }
 
-	private Object invokeControl(Method control, Query query) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException
+	protected Object invokeControl(Method control, Query query) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException
 	{
 		switch(control.getParameterCount())
         {
@@ -275,7 +196,7 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
         }
 	}
 	
-	private void manageControlResult(String type, Object result)
+	protected void manageControlResult(String type, Object result)
 	{
 		if(result != null)
 		{
@@ -304,16 +225,6 @@ public class ProtocolHandler extends Thread implements ProtocolEntity
 		while(!running.get());
 		return this;
 	}
-
-	public ProtocolServer getProtocolServer() {
-		return protocolServer;
-	}
-
-    @Override
-    public String getEntityId()
-    {
-        return "PH(" + (protocol.getClass().isAnnotationPresent(ServerProtocol.class) ? "S" : "C") + "):" + (tunnel != null ? tunnel.getSocket().getInetAddress().getHostAddress() + ":" + tunnel.getSocket().getPort() + ":" + getProtocolName() : "");
-    }
 
     @Override
     public Options getOptions()

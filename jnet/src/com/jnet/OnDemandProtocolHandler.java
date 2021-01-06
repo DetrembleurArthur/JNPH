@@ -6,7 +6,7 @@ import java.lang.reflect.Method;
 import java.net.Socket;
 import java.util.ArrayList;
 
-public class OnDemandProtocolHandler extends ProtocolHandler
+public class OnDemandProtocolHandler extends ProtocolHandlerServer
 {
 	private boolean pooling = false;
 	
@@ -33,5 +33,13 @@ public class OnDemandProtocolHandler extends ProtocolHandler
 	public String getEntityId()
 	{
 		return "ONDE:" + super.getEntityId();
+	}
+
+	public boolean isPooling() {
+		return pooling;
+	}
+
+	public void setPooling(boolean pooling) {
+		this.pooling = pooling;
 	}
 }

@@ -1,18 +1,10 @@
 package test;
 
-import javax.swing.JOptionPane;
-
-import com.jnet.Args;
 import com.jnet.ClientProtocol;
-import com.jnet.Com;
 import com.jnet.Control;
-import com.jnet.ServerProtocol;
-import com.jnet.ProtocolClient;
 import com.jnet.ProtocolHandler;
 import com.jnet.ProtocolMaster;
 import com.jnet.Query;
-import com.jnet.Query.Mode;
-import com.jnet.Tunnel;
 
 
 public class Client

@@ -30,7 +30,7 @@ public class ProtocolServer extends Thread implements ProtocolEntity
         	serverSocket = new ServerSocket(protocol.getAnnotation(ServerProtocol.class).port(), 50, InetAddress.getByName(protocol.getAnnotation(ServerProtocol.class).ip()));
         protocolHandlers = new ArrayList<>();
         poolMonitor = new Object();
-        options = ProtocolEntity.getOptions(protocol.getAnnotation(ServerProtocol.class));
+        options = ProtocolEntity.getOptions(protocol);
     }
 
     public ServerSocket getServerSocket()

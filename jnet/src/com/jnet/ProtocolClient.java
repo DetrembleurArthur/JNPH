@@ -21,7 +21,7 @@ public class ProtocolClient implements Runnable, ProtocolEntity
         {
             this.protocol = protocol;
         }
-        options = ProtocolEntity.getOptions(protocol.getAnnotation(ClientProtocol.class));
+        options = ProtocolEntity.getOptions(protocol);
     }
 
 

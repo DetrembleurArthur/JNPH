@@ -7,12 +7,12 @@ public interface ProtocolEntity
     String getEntityId();
     default Options getOptions() {return null;}
 
-    static Options getOptions(Annotation ann)
+    static Options getOptions(Class<?> pclass)
     {
-        if(ann instanceof ServerProtocol)
-            return new Options((ServerProtocol) ann);
-        else if(ann instanceof ClientProtocol)
-            return new Options((ClientProtocol) ann);
+        if(pclass.isAnnotationPresent(ServerProtocol.class))
+            return new Options(pclass.getAnnotation(ServerProtocol.class));
+        if(pclass.isAnnotationPresent(ClientProtocol.class))
+            return new Options(pclass.getAnnotation(ClientProtocol.class));
         return null;
     }
 }
