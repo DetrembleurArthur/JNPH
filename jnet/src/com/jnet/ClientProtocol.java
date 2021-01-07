@@ -14,4 +14,5 @@ public @interface ClientProtocol
     String ip() default "127.0.0.1";
     String name() default "...";
     boolean objQuery() default false;
+    boolean ssl() default false;
 }

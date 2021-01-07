@@ -1,5 +1,6 @@
 package com.jnet;
 
+import javax.net.ssl.SSLSocket;
 import java.io.*;
 import java.net.Socket;
 

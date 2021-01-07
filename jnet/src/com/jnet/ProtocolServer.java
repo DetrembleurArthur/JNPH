@@ -1,6 +1,6 @@
 package com.jnet;
 
-import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
@@ -24,10 +24,28 @@ public class ProtocolServer extends Thread implements ProtocolEntity
         this.master = master;
         running = false;
         this.protocol = protocol;
-        if(protocol.getAnnotation(ServerProtocol.class).ip().isEmpty())
-        	serverSocket = new ServerSocket(protocol.getAnnotation(ServerProtocol.class).port());
+        if(protocol.getAnnotation(ServerProtocol.class).ssl())
+        {
+            serverSocket = Utils
+                    .generateServerSSL(
+                            "D:\\Users\\mb624\\Documents\\GitHub\\complement_reseau_ApplicBateau\\makecert\\server_keystore",
+                            "server_keystore",
+                            "server_keystore",
+                            protocol.getAnnotation(ServerProtocol.class).port(), protocol.getAnnotation(ServerProtocol.class).ip());
+            Log.out(this, "SSL activated");
+        }
         else
-        	serverSocket = new ServerSocket(protocol.getAnnotation(ServerProtocol.class).port(), 50, InetAddress.getByName(protocol.getAnnotation(ServerProtocol.class).ip()));
+        {
+            if(protocol.getAnnotation(ServerProtocol.class).ip().isEmpty())
+            {
+                serverSocket = new ServerSocket(protocol.getAnnotation(ServerProtocol.class).port());
+            }
+            else
+            {
+                serverSocket = new ServerSocket(protocol.getAnnotation(ServerProtocol.class).port(), 50, InetAddress.getByName(protocol.getAnnotation(ServerProtocol.class).ip()));
+            }
+        }
+
         protocolHandlers = new ArrayList<>();
         poolMonitor = new Object();
         options = ProtocolEntity.getOptions(protocol);

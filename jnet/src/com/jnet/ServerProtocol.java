@@ -16,4 +16,5 @@ public @interface ServerProtocol
     boolean pool() default false;
     int maxClients() default 5;
     boolean objQuery() default false;
+    boolean ssl() default false;
 }

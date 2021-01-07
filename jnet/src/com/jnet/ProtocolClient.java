@@ -50,13 +50,28 @@ public class ProtocolClient implements Runnable, ProtocolEntity
     {
         try
         {
+            Socket socket;
             ClientProtocol ann = protocol.getAnnotation(ClientProtocol.class);
-            Socket socket = new Socket(ann.ip(), ann.port());
+            if(protocol.getAnnotation(ClientProtocol.class).ssl())
+            {
+                socket = Utils.generateClientSSL(
+                        "D:\\Users\\mb624\\Documents\\GitHub\\complement_reseau_ApplicBateau\\makecert\\client_keystore",
+                        "client_keystore",
+                        "client_keystore",
+                        protocol.getAnnotation(ClientProtocol.class).port(), protocol.getAnnotation(ClientProtocol.class).ip());
+                this.socket = socket;
+                Log.out(this, "SSL activated");
+            }
+            else
+            {
+                socket = new Socket(ann.ip(), ann.port());
+                this.socket = socket;
+            }
             ProtocolHandler protocolHandler = ProtocolHandler.create(protocol.getConstructor().newInstance(), null);
             protocolHandler.initNet(socket);
             protocolHandler.start();
             this.protocolHandler = protocolHandler;
-            this.socket = socket;
+
             Log.out(this, "client started on " + socket.getInetAddress().getHostAddress());
         } catch (IOException | NoSuchMethodException e)
         {
