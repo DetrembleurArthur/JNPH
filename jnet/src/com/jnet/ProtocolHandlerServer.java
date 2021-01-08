@@ -6,7 +6,8 @@ public abstract class ProtocolHandlerServer extends ProtocolHandler
     
     public static ProtocolHandlerServer create(Object protocol, ProtocolServer server)
     {
-    	boolean pool = protocol.getClass().getAnnotation(ServerProtocol.class).pool();
+        Options options = ProtocolEntity.getOptions(protocol.getClass());
+    	boolean pool = (boolean) options.get("pool");
     	if(pool)
     	{
     		return new PoolProtocolHandler(protocol, server);

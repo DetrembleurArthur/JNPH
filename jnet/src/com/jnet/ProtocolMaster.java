@@ -37,14 +37,16 @@ public final class ProtocolMaster implements Runnable, ProtocolEntity
         {
             if(protocolClass.isAnnotationPresent(ServerProtocol.class))
             {
+                Options options0 = ProtocolEntity.getOptions(protocolClass);
                 if(!serverProtocolClasses.contains(protocolClass))
                 {
                 	for(Class<?> spc : serverProtocolClasses)
                 	{
-                		if(spc.getAnnotation(ServerProtocol.class).name()
-                				.equals(protocolClass.getAnnotation(ServerProtocol.class).name()))
+                	    Options options1 = ProtocolEntity.getOptions(spc);
+                		if(options1.getProperty("name")
+                				.equals(options0.getProperty("name")))
                 		{
-                			Log.err(this, "protocol name duplicated... : " + spc.getAnnotation(ServerProtocol.class).name());
+                			Log.err(this, "protocol name duplicated... : " + options1.getProperty("name"));
                 			throw new IllegalArgumentException();
                 		}
                 	}

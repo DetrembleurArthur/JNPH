@@ -1,12 +1,20 @@
 package com.jnet;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 import javax.net.ssl.*;
 import java.io.*;
 import java.net.InetAddress;
 import java.security.KeyStore;
+import java.security.Security;
 
 public class Utils
 {
+    static
+    {
+        Security.addProvider(new BouncyCastleProvider());
+    }
+
     public static SSLServerSocket generateServerSSL(String keystorePath, String keystorePswd, String keyPswd, int port, String ip)
     {
         try
@@ -16,7 +24,6 @@ public class Utils
             char[] PASSWD_KEYSTORE = keystorePswd.toCharArray();
             FileInputStream ServerFK = new FileInputStream (FICHIER_KEYSTORE);
             ServerKs.load(ServerFK, PASSWD_KEYSTORE);
-            // 2. Contexte
             SSLContext SslC = SSLContext.getInstance("SSLv3");
             KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
             char[] PASSWD_KEY = keyPswd.toCharArray();
@@ -24,14 +31,13 @@ public class Utils
             TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
             tmf.init(ServerKs);
             SslC.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-            // 3. Factory
             SSLServerSocketFactory SslSFac= SslC.getServerSocketFactory();
-            // 4. Socket
             SSLServerSocket sslSSocket;
             if(ip.isEmpty())
                 sslSSocket = (SSLServerSocket) SslSFac.createServerSocket(port);
             else
                 sslSSocket = (SSLServerSocket) SslSFac.createServerSocket(port, 50, InetAddress.getByName(ip));
+            sslSSocket.setNeedClientAuth(true);
             return sslSSocket;
         } catch (Exception e)
         {
@@ -45,7 +51,6 @@ public class Utils
         SSLSocket sslSocket = null;
         BufferedReader dis=null;
         BufferedWriter dos=null;
-        String ligneDuServeur;
         try
         {
             KeyStore ServerKs = KeyStore.getInstance("JKS");

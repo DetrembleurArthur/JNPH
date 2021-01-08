@@ -32,16 +32,12 @@ public abstract class ProtocolHandler extends Thread implements ProtocolEntity
     
     public String getProtocolName()
     {
-    	if(protocol.getClass().isAnnotationPresent(ServerProtocol.class))
-    		return protocol.getClass().getAnnotation(ServerProtocol.class).name();
-    	return protocol.getClass().getAnnotation(ClientProtocol.class).name();
+    	return options.getProperty("name");
     }
 
     public boolean isInObjectQueryMode()
     {
-        if(protocol.getClass().isAnnotationPresent(ServerProtocol.class))
-            return protocol.getClass().getAnnotation(ServerProtocol.class).objQuery();
-        return protocol.getClass().getAnnotation(ClientProtocol.class).objQuery();
+        return (boolean) options.get("objQuery");
     }
     
     private void initControls()

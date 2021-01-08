@@ -13,6 +13,7 @@ public class ProtocolClient implements Runnable, ProtocolEntity
 
     public ProtocolClient(Class<?> protocol)
     {
+        options = ProtocolEntity.getOptions(protocol);
         if(!protocol.isAnnotationPresent(ClientProtocol.class))
         {
             throw new IllegalArgumentException(protocol.getCanonicalName() + " is not annotated as 'Protocol'");
@@ -21,7 +22,6 @@ public class ProtocolClient implements Runnable, ProtocolEntity
         {
             this.protocol = protocol;
         }
-        options = ProtocolEntity.getOptions(protocol);
     }
 
 
@@ -51,20 +51,19 @@ public class ProtocolClient implements Runnable, ProtocolEntity
         try
         {
             Socket socket;
-            ClientProtocol ann = protocol.getAnnotation(ClientProtocol.class);
-            if(protocol.getAnnotation(ClientProtocol.class).ssl())
+            if((boolean)options.get("ssl"))
             {
                 socket = Utils.generateClientSSL(
                         "D:\\Users\\mb624\\Documents\\GitHub\\complement_reseau_ApplicBateau\\makecert\\client_keystore",
                         "client_keystore",
                         "client_keystore",
-                        protocol.getAnnotation(ClientProtocol.class).port(), protocol.getAnnotation(ClientProtocol.class).ip());
+                        (Integer) options.get("port"), options.getProperty("ip"));
                 this.socket = socket;
                 Log.out(this, "SSL activated");
             }
             else
             {
-                socket = new Socket(ann.ip(), ann.port());
+                socket = new Socket(options.getProperty("ip"), (Integer) options.get("port"));
                 this.socket = socket;
             }
             ProtocolHandler protocolHandler = ProtocolHandler.create(protocol.getConstructor().newInstance(), null);

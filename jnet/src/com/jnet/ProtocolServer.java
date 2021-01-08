@@ -21,34 +21,35 @@ public class ProtocolServer extends Thread implements ProtocolEntity
     
     public ProtocolServer(Class<?> protocol, ProtocolMaster master) throws IOException
     {
+        options = ProtocolEntity.getOptions(protocol);
         this.master = master;
         running = false;
         this.protocol = protocol;
-        if(protocol.getAnnotation(ServerProtocol.class).ssl())
+        assert options != null;
+        if((Boolean)options.get("ssl"))
         {
             serverSocket = Utils
                     .generateServerSSL(
                             "D:\\Users\\mb624\\Documents\\GitHub\\complement_reseau_ApplicBateau\\makecert\\server_keystore",
                             "server_keystore",
                             "server_keystore",
-                            protocol.getAnnotation(ServerProtocol.class).port(), protocol.getAnnotation(ServerProtocol.class).ip());
+                            (Integer) options.get("port"), options.getProperty("ip"));
             Log.out(this, "SSL activated");
         }
         else
         {
-            if(protocol.getAnnotation(ServerProtocol.class).ip().isEmpty())
+            if(options.getProperty("ip").isEmpty())
             {
-                serverSocket = new ServerSocket(protocol.getAnnotation(ServerProtocol.class).port());
+                serverSocket = new ServerSocket((Integer) options.get("port"));
             }
             else
             {
-                serverSocket = new ServerSocket(protocol.getAnnotation(ServerProtocol.class).port(), 50, InetAddress.getByName(protocol.getAnnotation(ServerProtocol.class).ip()));
+                serverSocket = new ServerSocket((Integer) options.get("port"), 50, InetAddress.getByName(options.getProperty("ip")));
             }
         }
 
         protocolHandlers = new ArrayList<>();
         poolMonitor = new Object();
-        options = ProtocolEntity.getOptions(protocol);
     }
 
     public ServerSocket getServerSocket()
@@ -73,7 +74,7 @@ public class ProtocolServer extends Thread implements ProtocolEntity
 
     public void initPool()
     {
-    	int poolSize = protocol.getAnnotation(ServerProtocol.class).maxClients();
+    	int poolSize = (int) options.get("maxClients");
         for(int i = 0; i < poolSize; i++)
         {
             try
@@ -91,13 +92,13 @@ public class ProtocolServer extends Thread implements ProtocolEntity
     
     public String getManagedProtocolName()
     {
-    	return getProtocol().getAnnotation(ServerProtocol.class).name();
+    	return options.getProperty("name");
     }
 
     @Override
     public void run()
     {
-    	boolean pool = protocol.getAnnotation(ServerProtocol.class).pool();
+    	boolean pool = (boolean) options.get("pool");
         running = true;
         if(pool)
         	initPool();
@@ -107,7 +108,12 @@ public class ProtocolServer extends Thread implements ProtocolEntity
             {
                 Log.out(this,"listen on " + serverSocket.getInetAddress().getHostAddress());
                 Socket cliSocket = serverSocket.accept();
-                Log.out(this, "client accepted on " + cliSocket.getInetAddress().getHostName() + ":" + cliSocket.getPort());
+                if((boolean)options.get("ssl"))
+                {
+                    Log.out(this, "start SSL handshake");
+                    ((SSLSocket)cliSocket).startHandshake();
+                }
+                Log.out(this, "client accepted on " + cliSocket.getInetAddress().getHostAddress() + ":" + cliSocket.getPort());
                 if(pool)
                 {
                 	synchronized (getPoolMonitor())
@@ -119,7 +125,7 @@ public class ProtocolServer extends Thread implements ProtocolEntity
                 }
                 else
                 {
-                	if(protocol.getAnnotation(ServerProtocol.class).maxClients() == protocolHandlers.size())
+                	if((int)options.get("maxClients") == protocolHandlers.size())
                 	{
                 		cliSocket.close();
                 		continue;
