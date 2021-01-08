@@ -30,7 +30,7 @@ public class ProtocolServer extends Thread implements ProtocolEntity
         {
             serverSocket = Utils
                     .generateServerSSL(
-                            "D:\\Users\\mb624\\Documents\\GitHub\\complement_reseau_ApplicBateau\\makecert\\server_keystore",
+                            "resources/makecert/server_keystore",
                             "server_keystore",
                             "server_keystore",
                             (Integer) options.get("port"), options.getProperty("ip"));

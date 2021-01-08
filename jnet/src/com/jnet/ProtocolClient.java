@@ -54,7 +54,7 @@ public class ProtocolClient implements Runnable, ProtocolEntity
             if((boolean)options.get("ssl"))
             {
                 socket = Utils.generateClientSSL(
-                        "D:\\Users\\mb624\\Documents\\GitHub\\complement_reseau_ApplicBateau\\makecert\\client_keystore",
+                        "resources/makecert/client_keystore",
                         "client_keystore",
                         "client_keystore",
                         (Integer) options.get("port"), options.getProperty("ip"));
