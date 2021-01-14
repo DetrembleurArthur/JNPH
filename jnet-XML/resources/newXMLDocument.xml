@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE serveurs SYSTEM "newXMLDocument.dtd" >
+<serveurs>
+    <serveur>
+        <noms>Test</noms>
+        <infos_root>Lol</infos_root>
+        <connector pool='true' size='1' ssl='true' objQuery='true'>50004</connector>
+    </serveur>
+    <databases>
+        <database user='root' password='13Mysql53'>bd_compta</database>
+    </databases>
+</serveurs>
+

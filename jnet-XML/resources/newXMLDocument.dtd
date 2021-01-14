@@ -1,0 +1,52 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!--
+    TODO define vocabulary identification
+    PUBLIC ID: -//vendor//vocabulary//EN
+    SYSTEM ID: http://server/path/newXMLDocument.dtd
+
+-->
+
+<!--
+    An example how to use this DTD from your XML document:
+
+    <?xml version="1.0"?>
+
+    <!DOCTYPE serveurs SYSTEM "newXMLDocument.dtd">
+
+    <serveurs>
+    ...
+    </serveurs>
+-->
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT serveurs (serveur|databases)*>
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT serveur (noms|infos_root|connector)*>
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT noms (#PCDATA)>
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT infos_root (#PCDATA)>
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT connector (#PCDATA)>
+<!ATTLIST connector
+    pool CDATA #IMPLIED
+    size CDATA #IMPLIED
+    ip CDATA #IMPLIED
+    objQuery CDATA #IMPLIED
+    ssl CDATA #IMPLIED
+  >
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT databases (database)*>
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT database (#PCDATA)>
+<!ATTLIST database
+    user CDATA #IMPLIED
+    password CDATA #IMPLIED
+  >
